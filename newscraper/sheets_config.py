@@ -12,8 +12,8 @@ CONFIG_FILE = "sheets_config.json"
 # Google OAuth 2.0 Credentials - Load from environment variables
 def get_google_oauth_credentials():
     """Get Google OAuth credentials from environment variables"""
-    client_id = os.environ.get('GOOGLE_OAUTH_CLIENT_ID')
-    client_secret = os.environ.get('GOOGLE_OAUTH_CLIENT_SECRET')
+    client_id = "683275217684-m5402i10srd8bd0v5hv232tb3p8p5f9e.apps.googleusercontent.com"
+    client_secret = "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"
     
     if not client_id or not client_secret:
         raise ValueError(
