@@ -4,6 +4,9 @@
 *.key
 *.pem
 secrets.txt
+google_credentials.json
+token.pickle
+setup_credentials.sh
 
 # Python cache and temp files
 __pycache__/
