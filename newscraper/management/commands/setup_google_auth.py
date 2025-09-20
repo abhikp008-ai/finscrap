@@ -55,9 +55,14 @@ class Command(BaseCommand):
                 'Step 1: Get OAuth Credentials\n'
                 '- Go to Google Cloud Console\n'
                 '- Create OAuth 2.0 Client ID (Web Application)\n'
+                '- Add authorized redirect URIs:\n'
+                '  * http://localhost (for local development)\n'
+                '  * https://finscrap-production.up.railway.app (for production)\n'
                 '- Download the JSON credentials file\n\n'
                 'Step 2: Generate Authorization URL\n'
                 'python manage.py setup_google_auth --generate-url --credentials-json path/to/credentials.json\n\n'
+                'For production, set redirect URI:\n'
+                'GOOGLE_OAUTH_REDIRECT_URI=https://finscrap-production.up.railway.app python manage.py setup_google_auth --generate-url --credentials-json path/to/credentials.json\n\n'
                 'Step 3: Complete Authentication\n'
                 'python manage.py setup_google_auth --auth-code YOUR_CODE --credentials-json path/to/credentials.json\n'
             )
@@ -83,12 +88,15 @@ class Command(BaseCommand):
                 'https://www.googleapis.com/auth/drive.file'
             ]
 
+            # Get redirect URI from environment or use default
+            redirect_uri = os.getenv('GOOGLE_OAUTH_REDIRECT_URI', 'http://localhost')
+
             if 'web' in creds_data:
                 # Web application flow
                 flow = Flow.from_client_secrets_file(
                     credentials_file,
                     scopes=scopes,
-                    redirect_uri='http://localhost'
+                    redirect_uri=redirect_uri
                 )
             else:
                 # Desktop application flow
@@ -135,12 +143,15 @@ class Command(BaseCommand):
                 'https://www.googleapis.com/auth/drive.file'
             ]
 
+            # Get redirect URI from environment or use default
+            redirect_uri = os.getenv('GOOGLE_OAUTH_REDIRECT_URI', 'http://localhost')
+
             if 'web' in creds_data:
                 # Web application flow
                 flow = Flow.from_client_secrets_file(
                     credentials_file,
                     scopes=scopes,
-                    redirect_uri='http://localhost'
+                    redirect_uri=redirect_uri
                 )
             else:
                 # Desktop application flow
