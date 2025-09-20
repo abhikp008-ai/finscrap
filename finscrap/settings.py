@@ -144,6 +144,26 @@ LOGIN_URL = '/login/'
 LOGIN_REDIRECT_URL = '/'
 LOGOUT_REDIRECT_URL = '/login/'
 
+# CSRF and Trusted Origins Configuration
+CSRF_TRUSTED_ORIGINS = [
+    'https://finscrap-production.up.railway.app',
+    'http://localhost:8000',
+    'http://127.0.0.1:8000',
+]
+
+# Add production domain to trusted origins if not already present
+if 'finscrap-production.up.railway.app' not in CSRF_TRUSTED_ORIGINS:
+    CSRF_TRUSTED_ORIGINS.append('https://finscrap-production.up.railway.app')
+
+# Additional CSRF settings for production
+CSRF_COOKIE_SAMESITE = 'Lax'
+CSRF_COOKIE_HTTPONLY = False  # Allow JavaScript access for AJAX requests
+CSRF_USE_SESSIONS = False  # Use cookies instead of sessions for CSRF tokens
+
+# Session settings for better security
+SESSION_COOKIE_SAMESITE = 'Lax'
+SESSION_COOKIE_HTTPONLY = True
+
 # Default primary key field type
 # https://docs.djangoproject.com/en/5.2/ref/settings/#default-auto-field
 
