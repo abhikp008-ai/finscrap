@@ -17,9 +17,9 @@ ENV/
 
 # Django
 *.log
-local_settings.py
-db.sqlite3
-db.sqlite3-journal
+# local_settings.py
+# db.sqlite3
+# db.sqlite3-journal
 # media/
 # staticfiles/
 
@@ -30,7 +30,7 @@ db.sqlite3-journal
 *.swo
 
 # OS files
-.DS_Store
-Thumbs.db
-.local/
+# .DS_Store
+# Thumbs.db
+# .local/
 # attached_assets/
