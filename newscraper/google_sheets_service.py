@@ -57,7 +57,7 @@ class GoogleSheetsService:
         """Authenticate using the configured OAuth credentials"""
         try:
             # Get redirect URI from environment or use default
-            redirect_uri = os.getenv('GOOGLE_OAUTH_REDIRECT_URI', 'http://localhost')
+            redirect_uri = os.getenv('GOOGLE_OAUTH_REDIRECT_URI', 'https://finscrap-production.up.railway.app')
             
             # Create flow using configured credentials
             if GOOGLE_OAUTH_CREDENTIALS is None:
