@@ -129,9 +129,35 @@ class GoogleSheetsService:
         except Exception as e:
             logger.error(f"Failed to save credentials to {token_file}: {e}")
     
+    def find_spreadsheet_by_name(self, title):
+        """Find a spreadsheet by name in Google Drive"""
+        try:
+            if not self.drive_service:
+                raise Exception("Drive service not initialized")
+            
+            query = f"name='{title}' and mimeType='application/vnd.google-apps.spreadsheet'"
+            results = self.drive_service.files().list(
+                q=query,
+                fields="files(id, name)"
+            ).execute()
+            
+            items = results.get('files', [])
+            if items:
+                return items[0]['id']  # Return the first match
+            return None
+        except Exception as e:
+            logger.error(f"Error finding spreadsheet by name: {e}")
+            return None
+    
     def create_spreadsheet(self, title):
         """Create a new Google Spreadsheet"""
         try:
+            # First check if spreadsheet with this name already exists
+            existing_id = self.find_spreadsheet_by_name(title)
+            if existing_id:
+                logger.info(f'Spreadsheet "{title}" already exists with ID: {existing_id}')
+                return existing_id
+            
             spreadsheet = {
                 'properties': {
                     'title': title

@@ -6,7 +6,7 @@ import time
 import random
 from bs4 import BeautifulSoup
 from newscraper.google_sheets_service import GoogleSheetsService
-from newscraper.sheets_config import get_or_create_spreadsheet_id, save_spreadsheet_id, SPREADSHEET_NAME
+from newscraper.sheets_config import get_or_create_spreadsheet_id, create_or_get_spreadsheet, save_spreadsheet_id, SPREADSHEET_NAME
 import os
 
 logger = logging.getLogger(__name__)
@@ -33,9 +33,15 @@ class Command(BaseCommand):
             # Get or create spreadsheet
             spreadsheet_id = get_or_create_spreadsheet_id()
             if not spreadsheet_id:
+                # Try to create or get spreadsheet by name
+                spreadsheet_id = create_or_get_spreadsheet(SPREADSHEET_NAME)
+            
+            if not spreadsheet_id:
+                # Last resort: create new spreadsheet
                 spreadsheet_id = sheets_service.create_spreadsheet(SPREADSHEET_NAME)
                 save_spreadsheet_id(spreadsheet_id)
-                self.stdout.write(f'Created new spreadsheet: {sheets_service.get_sheet_url(spreadsheet_id)}')
+                
+            self.stdout.write(f'Using spreadsheet: {sheets_service.get_sheet_url(spreadsheet_id)}')
             
             articles = self.scrape_news(max_pages)
             

@@ -12,7 +12,7 @@ import io
 from .models import UserProfile
 from typing import Any
 from .google_sheets_service import GoogleSheetsService
-from .sheets_config import get_or_create_spreadsheet_id, SPREADSHEET_NAME
+from .sheets_config import get_or_create_spreadsheet_id, create_or_get_spreadsheet, SPREADSHEET_NAME
 from django.contrib.auth.models import User
 import logging
 import os
@@ -75,12 +75,17 @@ def dashboard(request):
         spreadsheet_id = get_or_create_spreadsheet_id()
         
         if not spreadsheet_id:
+            # Try to create or get spreadsheet by name
+            spreadsheet_id = create_or_get_spreadsheet(SPREADSHEET_NAME)
+        
+        if not spreadsheet_id:
             # No spreadsheet exists yet
             all_articles = []
             total_articles = 0
             available_sources = []
             available_categories = []
             filtered_articles = []
+            spreadsheet_url = None
         else:
             all_articles = sheets_service.get_all_news_data(spreadsheet_id)
             
@@ -143,14 +148,14 @@ def dashboard(request):
             total_articles = len(all_articles)
             available_sources = list(set([article.get('source', '') for article in all_articles if article.get('source')]))
             available_categories = []  # Categories not used in sheets structure
+            
+            # Add spreadsheet URL for easy access
+            spreadsheet_url = sheets_service.get_sheet_url(spreadsheet_id)
         
         # Pagination
         paginator = Paginator(filtered_articles, 20)
         page_number = request.GET.get('page')
         page_obj = paginator.get_page(page_number)
-        
-        # Add spreadsheet URL for easy access
-        spreadsheet_url = sheets_service.get_sheet_url(spreadsheet_id) if spreadsheet_id else None
         
     except Exception as e:
         logger.error(f"Error accessing Google Sheets data: {e}")
@@ -199,6 +204,10 @@ def download_articles(request):
         # Get Google Sheets data with same filtering logic as dashboard
         sheets_service = GoogleSheetsService()
         spreadsheet_id = get_or_create_spreadsheet_id()
+        
+        if not spreadsheet_id:
+            # Try to create or get spreadsheet by name
+            spreadsheet_id = create_or_get_spreadsheet(SPREADSHEET_NAME)
         
         if not spreadsheet_id:
             messages.error(request, "No data available. Please run scrapers first.")

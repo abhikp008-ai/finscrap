@@ -25,6 +25,9 @@
                     </div>
                     <div class="card-body">
                         <p><strong>Total Articles:</strong> {{ total_articles }}</p>
+                        {% if spreadsheet_url %}
+                            <p><strong>Google Spreadsheet:</strong> <a href="{{ spreadsheet_url }}" target="_blank" class="btn btn-outline-success btn-sm">View in Google Sheets</a></p>
+                        {% endif %}
                         <a href="/admin/" class="btn btn-primary">Admin Panel</a>
                     </div>
                 </div>

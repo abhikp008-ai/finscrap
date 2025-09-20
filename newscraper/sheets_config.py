@@ -60,6 +60,30 @@ def get_or_create_spreadsheet_id():
     
     return None
 
+def create_or_get_spreadsheet(spreadsheet_name=None):
+    """Create a new spreadsheet or get existing one by name"""
+    from .google_sheets_service import GoogleSheetsService
+    
+    name = spreadsheet_name or SPREADSHEET_NAME
+    
+    try:
+        sheets_service = GoogleSheetsService()
+        # Try to find existing spreadsheet by name
+        spreadsheet_id = sheets_service.find_spreadsheet_by_name(name)
+        
+        if spreadsheet_id:
+            # Spreadsheet exists, save its ID and return
+            save_spreadsheet_id(spreadsheet_id)
+            return spreadsheet_id
+        else:
+            # Create new spreadsheet
+            spreadsheet_id = sheets_service.create_spreadsheet(name)
+            save_spreadsheet_id(spreadsheet_id)
+            return spreadsheet_id
+    except Exception as e:
+        print(f"Error creating/getting spreadsheet: {e}")
+        return None
+
 def save_spreadsheet_id(spreadsheet_id):
     """Save spreadsheet ID to config file"""
     try:
