@@ -9,6 +9,7 @@ import pickle
 from django.core.management.base import BaseCommand, CommandError
 from google_auth_oauthlib.flow import Flow, InstalledAppFlow
 from google.auth.transport.requests import Request
+from newscraper.sheets_config import GOOGLE_OAUTH_CREDENTIALS
 
 
 class Command(BaseCommand):
@@ -18,7 +19,7 @@ class Command(BaseCommand):
         parser.add_argument(
             '--credentials-json',
             type=str,
-            help='Path to Google OAuth credentials JSON file'
+            help='Path to Google OAuth credentials JSON file (optional, uses configured credentials by default)'
         )
         parser.add_argument(
             '--auth-code',
@@ -52,37 +53,22 @@ class Command(BaseCommand):
         self.stdout.write(
             self.style.WARNING(
                 'Google Sheets Authentication Setup\n\n'
-                'Step 1: Get OAuth Credentials\n'
-                '- Go to Google Cloud Console\n'
-                '- Create OAuth 2.0 Client ID (Web Application)\n'
-                '- Add authorized redirect URIs:\n'
-                '  * http://localhost (for local development)\n'
-                '  * https://finscrap-production.up.railway.app (for production)\n'
-                '- Download the JSON credentials file\n\n'
-                'Step 2: Generate Authorization URL\n'
+                'Option 1: Use Environment Variables (Recommended)\n'
+                'export GOOGLE_OAUTH_CLIENT_ID="your_client_id_here"\n'
+                'export GOOGLE_OAUTH_CLIENT_SECRET="your_client_secret_here"\n'
+                'python manage.py setup_google_auth --generate-url\n\n'
+                'Option 2: Use Credentials File\n'
                 'python manage.py setup_google_auth --generate-url --credentials-json path/to/credentials.json\n\n'
-                'For production, set redirect URI:\n'
-                'GOOGLE_OAUTH_REDIRECT_URI=https://finscrap-production.up.railway.app python manage.py setup_google_auth --generate-url --credentials-json path/to/credentials.json\n\n'
-                'Step 3: Complete Authentication\n'
-                'python manage.py setup_google_auth --auth-code YOUR_CODE --credentials-json path/to/credentials.json\n'
+                'For production, also set redirect URI:\n'
+                'GOOGLE_OAUTH_REDIRECT_URI=https://finscrap-production.up.railway.app python manage.py setup_google_auth --generate-url\n\n'
+                'Complete Authentication:\n'
+                'python manage.py setup_google_auth --auth-code YOUR_CODE\n'
             )
         )
 
     def generate_auth_url(self, credentials_file):
         """Generate OAuth authorization URL"""
-        if not credentials_file:
-            raise CommandError(
-                'Please provide credentials file with --credentials-json'
-            )
-
-        if not os.path.exists(credentials_file):
-            raise CommandError(f'Credentials file not found: {credentials_file}')
-
         try:
-            # Determine flow type based on credentials
-            with open(credentials_file, 'r') as f:
-                creds_data = json.load(f)
-
             scopes = [
                 'https://www.googleapis.com/auth/spreadsheets',
                 'https://www.googleapis.com/auth/drive.file'
@@ -91,18 +77,38 @@ class Command(BaseCommand):
             # Get redirect URI from environment or use default
             redirect_uri = os.getenv('GOOGLE_OAUTH_REDIRECT_URI', 'http://localhost')
 
-            if 'web' in creds_data:
-                # Web application flow
-                flow = Flow.from_client_secrets_file(
-                    credentials_file,
+            if credentials_file and os.path.exists(credentials_file):
+                # Use provided credentials file
+                with open(credentials_file, 'r') as f:
+                    creds_data = json.load(f)
+
+                if 'web' in creds_data:
+                    # Web application flow
+                    flow = Flow.from_client_secrets_file(
+                        credentials_file,
+                        scopes=scopes,
+                        redirect_uri=redirect_uri
+                    )
+                else:
+                    # Desktop application flow
+                    flow = InstalledAppFlow.from_client_secrets_file(
+                        credentials_file, 
+                        scopes
+                    )
+            else:
+                # Use configured credentials from environment variables
+                if GOOGLE_OAUTH_CREDENTIALS is None:
+                    raise CommandError(
+                        "Google OAuth credentials not configured. Please set environment variables:\n"
+                        "GOOGLE_OAUTH_CLIENT_ID=your_client_id\n"
+                        "GOOGLE_OAUTH_CLIENT_SECRET=your_client_secret\n\n"
+                        "Or provide a credentials file with --credentials-json"
+                    )
+                
+                flow = Flow.from_client_config(
+                    GOOGLE_OAUTH_CREDENTIALS,
                     scopes=scopes,
                     redirect_uri=redirect_uri
-                )
-            else:
-                # Desktop application flow
-                flow = InstalledAppFlow.from_client_secrets_file(
-                    credentials_file, 
-                    scopes
                 )
 
             auth_url, _ = flow.authorization_url(prompt='consent')
@@ -122,22 +128,10 @@ class Command(BaseCommand):
 
     def complete_auth(self, credentials_file, auth_code):
         """Complete OAuth authentication with authorization code"""
-        if not credentials_file:
-            raise CommandError(
-                'Please provide credentials file with --credentials-json'
-            )
-
         if not auth_code:
             raise CommandError('Please provide authorization code with --auth-code')
 
-        if not os.path.exists(credentials_file):
-            raise CommandError(f'Credentials file not found: {credentials_file}')
-
         try:
-            # Determine flow type
-            with open(credentials_file, 'r') as f:
-                creds_data = json.load(f)
-
             scopes = [
                 'https://www.googleapis.com/auth/spreadsheets',
                 'https://www.googleapis.com/auth/drive.file'
@@ -146,18 +140,38 @@ class Command(BaseCommand):
             # Get redirect URI from environment or use default
             redirect_uri = os.getenv('GOOGLE_OAUTH_REDIRECT_URI', 'http://localhost')
 
-            if 'web' in creds_data:
-                # Web application flow
-                flow = Flow.from_client_secrets_file(
-                    credentials_file,
+            if credentials_file and os.path.exists(credentials_file):
+                # Use provided credentials file
+                with open(credentials_file, 'r') as f:
+                    creds_data = json.load(f)
+
+                if 'web' in creds_data:
+                    # Web application flow
+                    flow = Flow.from_client_secrets_file(
+                        credentials_file,
+                        scopes=scopes,
+                        redirect_uri=redirect_uri
+                    )
+                else:
+                    # Desktop application flow
+                    flow = InstalledAppFlow.from_client_secrets_file(
+                        credentials_file, 
+                        scopes
+                    )
+            else:
+                # Use configured credentials from environment variables
+                if GOOGLE_OAUTH_CREDENTIALS is None:
+                    raise CommandError(
+                        "Google OAuth credentials not configured. Please set environment variables:\n"
+                        "GOOGLE_OAUTH_CLIENT_ID=your_client_id\n"
+                        "GOOGLE_OAUTH_CLIENT_SECRET=your_client_secret\n\n"
+                        "Or provide a credentials file with --credentials-json"
+                    )
+                
+                flow = Flow.from_client_config(
+                    GOOGLE_OAUTH_CREDENTIALS,
                     scopes=scopes,
                     redirect_uri=redirect_uri
-                )
-            else:
-                # Desktop application flow
-                flow = InstalledAppFlow.from_client_secrets_file(
-                    credentials_file, 
-                    scopes
                 )
 
             # Exchange authorization code for tokens

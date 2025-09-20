@@ -1,12 +1,13 @@
 import json
 import logging
 from googleapiclient.discovery import build, Resource
-from google_auth_oauthlib.flow import InstalledAppFlow
+from google_auth_oauthlib.flow import InstalledAppFlow, Flow
 from google.auth.transport.requests import Request
 import os
 import pickle
 from datetime import datetime
 from typing import Optional, List, Dict, Any
+from .sheets_config import GOOGLE_OAUTH_CREDENTIALS
 
 logger = logging.getLogger(__name__)
 
@@ -23,9 +24,9 @@ class GoogleSheetsService:
         self._authenticate()
     
     def _authenticate(self):
-        """Authenticate using environment-managed credentials"""
+        """Authenticate using configured credentials"""
         try:
-            # Try to load from environment or secure location
+            # Try to load existing credentials first
             creds = self._load_credentials()
             
             if not creds or not creds.valid:
@@ -35,15 +36,11 @@ class GoogleSheetsService:
                         self._save_credentials(creds)
                     except Exception as e:
                         logger.error(f"Failed to refresh token: {e}")
-                        raise Exception(
-                            "Google Sheets authentication expired. Please run the setup command: "
-                            "python manage.py setup_google_auth"
-                        )
+                        # If refresh fails, try to re-authenticate using configured credentials
+                        creds = self._authenticate_with_configured_credentials()
                 else:
-                    raise Exception(
-                        "Google Sheets authentication not found. Please run the setup command: "
-                        "python manage.py setup_google_auth"
-                    )
+                    # No valid credentials, authenticate using configured credentials
+                    creds = self._authenticate_with_configured_credentials()
             
             self.service = build('sheets', 'v4', credentials=creds)
             self.drive_service = build('drive', 'v3', credentials=creds)
@@ -55,6 +52,45 @@ class GoogleSheetsService:
                 f"Google Sheets service unavailable: {str(e)}. "
                 "Please ensure authentication is properly configured."
             )
+    
+    def _authenticate_with_configured_credentials(self):
+        """Authenticate using the configured OAuth credentials"""
+        try:
+            # Get redirect URI from environment or use default
+            redirect_uri = os.getenv('GOOGLE_OAUTH_REDIRECT_URI', 'http://localhost')
+            
+            # Create flow using configured credentials
+            if GOOGLE_OAUTH_CREDENTIALS is None:
+                raise Exception(
+                    "Google OAuth credentials not configured. Please set environment variables:\n"
+                    "GOOGLE_OAUTH_CLIENT_ID=your_client_id\n"
+                    "GOOGLE_OAUTH_CLIENT_SECRET=your_client_secret"
+                )
+            
+            flow = Flow.from_client_config(
+                GOOGLE_OAUTH_CREDENTIALS,
+                scopes=SCOPES,
+                redirect_uri=redirect_uri
+            )
+            
+            # Generate authorization URL
+            auth_url, _ = flow.authorization_url(prompt='consent')
+            
+            logger.warning(
+                f"Google Sheets authentication required. Please visit this URL to authorize:\n"
+                f"{auth_url}\n\n"
+                f"After authorization, you'll get a code. Use it with:\n"
+                f"python manage.py setup_google_auth --auth-code YOUR_CODE"
+            )
+            
+            raise Exception(
+                "Google Sheets authentication required. Please run the setup command: "
+                "python manage.py setup_google_auth"
+            )
+            
+        except Exception as e:
+            logger.error(f"Failed to authenticate with configured credentials: {e}")
+            raise
     
     def _load_credentials(self):
         """Load credentials from secure storage"""
