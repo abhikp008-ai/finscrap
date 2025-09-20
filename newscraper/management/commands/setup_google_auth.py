@@ -75,7 +75,7 @@ class Command(BaseCommand):
             ]
 
             # Get redirect URI from environment or use default
-            redirect_uri = os.getenv('GOOGLE_OAUTH_REDIRECT_URI', 'http://localhost')
+            redirect_uri = os.getenv('GOOGLE_OAUTH_REDIRECT_URI', 'https://finscrap-production.up.railway.app')
 
             if credentials_file and os.path.exists(credentials_file):
                 # Use provided credentials file
@@ -138,7 +138,7 @@ class Command(BaseCommand):
             ]
 
             # Get redirect URI from environment or use default
-            redirect_uri = os.getenv('GOOGLE_OAUTH_REDIRECT_URI', 'http://localhost')
+            redirect_uri = os.getenv('GOOGLE_OAUTH_REDIRECT_URI', 'https://finscrap-production.up.railway.app')
 
             if credentials_file and os.path.exists(credentials_file):
                 # Use provided credentials file
